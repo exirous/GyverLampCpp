@@ -1,9 +1,6 @@
 #include "Settings.h"
 #include "EffectsManager.h"
 #include "MyMatrix.h"
-#include "LocalDNS.h"
-#include "MqttClient.h"
-#include "LampWebServer.h"
 
 #include <ESPAsyncWebServer.h>
 
@@ -60,23 +57,42 @@ void Settings::SaveLater()
 
 void Settings::Save()
 {
+    Serial.println(F("Openning spiffs.."));
     File file = SPIFFS.open(settingsFileName, "w");
     if (!file) {
         Serial.println(F("Error opening settings file from SPIFFS!"));
         return;
     }
-
     DynamicJsonDocument json(1024 * 6);
     JsonObject root = json.to<JsonObject>();
+    Serial.println(F("building json"));
     BuildJson(root);
+
+    Serial.println(F("serializing json.."));
 
     if (serializeJson(json, file) == 0) {
         Serial.println(F("Failed to write to file"));
     }
 
     if (file) {
+        Serial.println(F("closng file"));
         file.close();
     }
+}
+
+String Settings::GetConfigBuffer()
+{
+    DynamicJsonDocument json(1024 * 6);
+    JsonObject root = json.to<JsonObject>();
+    Serial.println(F("building json"));
+    BuildJson(root);
+
+    Serial.println(F("serializing json.."));
+    String buffer;
+    if (serializeJson(json, buffer) == 0) {
+        Serial.println(F("Failed to write to buffer"));
+    }
+    return buffer;
 }
 
 void Settings::WriteConfigTo(AsyncWebSocket *socket, AsyncWebSocketClient *client)
@@ -127,23 +143,7 @@ void Settings::ProcessConfig(const String &message)
 
     }
 
-    mqtt->update();
-}
-
-void Settings::ProcessCommandMqtt(const JsonObject &json)
-{
-    if (json.containsKey(F("state"))) {
-        const String state = json[F("state")];
-        mySettings->generalSettings.working = state == F("ON");
-    }
-    if (json.containsKey(F("effect"))) {
-        const String effect = json[F("effect")];
-        effectsManager->ChangeEffectByName(effect);
-    }
-    effectsManager->UpdateCurrentSettings(json);
-    SaveLater();
-
-    lampWebServer->Update();
+    //mqtt->update();
 }
 
 void Settings::BuildJson(JsonObject &root)

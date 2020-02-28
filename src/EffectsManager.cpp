@@ -16,6 +16,7 @@
 #include "effects/basic/ClockHorizontal3Effect.h"
 #include "effects/basic/StarfallEffect.h"
 #include "effects/basic/DiagonalRainbowEffect.h"
+#include "effects/basic/DawnEffect.h"
 
 #include "effects/noise/MadnessNoiseEffect.h"
 #include "effects/noise/CloudNoiseEffect.h"
@@ -42,6 +43,9 @@ uint32_t effectTimer = 0;
 
 uint8_t activeIndex = 0;
 bool working = true;
+int16_t fadeBrightness = 0;
+Effect *forcedEffect = nullptr;
+int forcedEffectIndex = -1;
 
 } // namespace
 
@@ -85,8 +89,42 @@ void EffectsManager::Process()
         return;
     }
     effectTimer = millis();
+     
+    if (mySettings->generalSettings.working)
+    {
+        if (fadeBrightness < 254)
+        {
+            fadeBrightness+=10;
+            if (fadeBrightness > 255)
+                fadeBrightness = 255;
+            myMatrix->setBrightness(activeEffect()->settings.brightness * (fadeBrightness / 255.0));
+        }
+    }
+    else
+    {
+        if (fadeBrightness > 0)
+        {
+            fadeBrightness-=10;
+            if (fadeBrightness < 0)
+                fadeBrightness = 0;
+            myMatrix->setBrightness(activeEffect()->settings.brightness * (fadeBrightness / 255.0));
+        }
+        else
+        {
+            return;
+        }                
+    }
 
     activeEffect()->Process();
+}
+
+void EffectsManager::ProcessForcedEffect()
+{
+    if (effectTimer != 0 && (millis() - effectTimer) < forcedEffect->settings.speed) {
+        return;
+    }
+    effectTimer = millis();
+    forcedEffect->Process();
 }
 
 void EffectsManager::Next()
@@ -123,8 +161,12 @@ void EffectsManager::ChangeEffect(uint8_t index)
         return;
     }
 
-    activeEffect()->deactivate();
-    myMatrix->clear();
+    if (forcedEffectIndex == -1)
+    {
+        activeEffect()->deactivate();
+        myMatrix->clear();
+    }
+    
     activeIndex = index;
     ActivateEffect(activeIndex);
     mySettings->SaveLater();
@@ -154,6 +196,10 @@ void EffectsManager::ActivateEffect(uint8_t index)
     if (activeIndex != index) {
         activeIndex = index;
     }
+
+    if (forcedEffectIndex > -1)
+        return;
+
     Effect *effect = effects[index];
     myMatrix->setBrightness(effect->settings.brightness);
     effect->activate();
@@ -161,14 +207,71 @@ void EffectsManager::ActivateEffect(uint8_t index)
 
 void EffectsManager::UpdateCurrentSettings(const JsonObject &json)
 {
-    activeEffect()->update(json);
-    myMatrix->setBrightness(activeEffect()->settings.brightness);
+    if (activeEffect()->update(json))    
+        mySettings->SaveLater();
+    if (forcedEffectIndex == -1)
+        myMatrix->setBrightness(activeEffect()->settings.brightness);
+    
 }
 
 uint8_t EffectsManager::Count()
 {
     return static_cast<uint8_t>(effects.size());
 }
+
+void EffectsManager::ForceEffect(int effectIndex, uint8_t brighness, uint8_t speed, uint16_t scale)
+{
+    if (effects.size() <= effectIndex)
+        return;
+    if (forcedEffectIndex != effectIndex)
+    {
+        Serial.println(F("Changing forced effect"));
+        if (forcedEffectIndex > -1)
+        {
+            Serial.println(F("Deactivating old"));
+            forcedEffect->deactivate();           
+        }
+
+        forcedEffectIndex = effectIndex;
+        Serial.println(F("Cloning effect"));
+        forcedEffect = effects[effectIndex]->clone();    
+        Serial.println(F("Setting settings"));
+        forcedEffect->settings.name = effects[effectIndex]->settings.name;
+        forcedEffect->settings.id = effects[effectIndex]->settings.id;
+        forcedEffect->settings.brightness = brighness;
+        forcedEffect->settings.speed = speed;
+        forcedEffect->settings.scale = scale;
+        Serial.println(F("Deactivating active effect.."));
+        activeEffect()->deactivate();
+        myMatrix->clear(true);
+        myMatrix->setBrightness(brighness);
+        Serial.println(F("Activating new effect.."));
+        forcedEffect->activate();
+        Serial.print("Forced effect:");
+        Serial.println(forcedEffect->settings.name);
+    }
+    else
+    {
+        forcedEffect->settings.brightness = brighness;
+        forcedEffect->settings.speed = speed;
+        forcedEffect->settings.scale = scale;
+    }
+}
+
+void EffectsManager::ClearForcedEffect()
+{
+    Serial.println(F("Clearing forced effect"));
+    if (forcedEffectIndex == -1)
+        return;
+    forcedEffectIndex = -1;
+    Serial.println(F("Deactivating forced effect"));
+    forcedEffect->deactivate();
+    forcedEffect = nullptr;
+    myMatrix->clear(true);
+    Serial.println(F("Re-activating current active effect"));
+    ActivateEffect(activeIndex);
+}
+
 
 Effect *EffectsManager::activeEffect()
 {
@@ -214,4 +317,5 @@ EffectsManager::EffectsManager()
     effectsMap[PSTR("StarfallEffect")] = new StarfallEffect();
     effectsMap[PSTR("DiagonalRainbowEffect")] = new DiagonalRainbowEffect();
     effectsMap[PSTR("SoundStereoEffect")] = new SoundStereoEffect();
+    effectsMap[PSTR("DawnEffect")] = new DawnEffect();
 }

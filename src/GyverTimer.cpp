@@ -6,15 +6,10 @@
 
 namespace  {
 
-int timeOffset = 3 * 3600; // GMT + 3
-int updateInterval = 60 * 1000; // 1 min
+int updateInterval = 60 * 1000 * 5; // 1 min
 
 WiFiUDP *ntpUDP = nullptr;
 NTPClient *timeClient = nullptr;
-
-uint32_t defaultInterval = 5 * 60 * 1000; // 5 min
-uint32_t interval = 0;
-uint32_t timer = 0;
 
 unsigned long hours = 0;
 String hoursString = "88";
@@ -35,12 +30,9 @@ void GyverTimer::Initialize()
                                updateInterval);
     timeClient->begin();
 
-    interval = defaultInterval;
-    timer = millis();
-
     Serial.printf_P(PSTR("Initializing GyverTimer: %s, offset: %d\n"),
                     mySettings->connectionSettings.ntpServer.c_str(),
-                    timeOffset);
+                    mySettings->connectionSettings.ntpOffset);
 }
 
 void GyverTimer::Process()
@@ -49,13 +41,7 @@ void GyverTimer::Process()
         return;
     }
 
-    if ((millis() - timer) < interval) {
-        return;
-    }
-
-    timer = millis();
     timeClient->update();
-
     ReadTime();
 }
 
@@ -64,13 +50,7 @@ void GyverTimer::SetInterval(uint32_t timerInterval)
     if (!timeClient) {
         return;
     }
-
-    if (timerInterval == 0) {
-        interval = defaultInterval;
-    } else {
-        interval = timerInterval;
-    }
-    ForceUpdate();
+    timeClient->setUpdateInterval(timerInterval);
 }
 
 void GyverTimer::ForceUpdate()
@@ -80,8 +60,6 @@ void GyverTimer::ForceUpdate()
     }
 
     timeClient->forceUpdate();
-
-    ReadTime();
 }
 
 void GyverTimer::ReadTime()
@@ -100,6 +78,40 @@ void GyverTimer::ReadTime()
     seconds = rawTime % 60;
     secondsString = seconds < 10 ? String(0) + String(seconds) : String(seconds);
 }
+
+boolean GyverTimer::IsZeroSeconds() 
+{
+    return timeClient->getSeconds() == 0;
+}
+
+boolean GyverTimer::UpdateTime()
+{
+    return timeClient->update();
+}
+
+
+uint8_t GyverTimer::GetDayOfWeek() 
+{
+    int8_t day = timeClient->getDay() - 1;
+    if (day == -1) day = 6;
+    return day;
+}
+
+int GyverTimer::GetCurrentDayMinutes()
+{
+    return timeClient->getHours() * 60 + timeClient->getMinutes();
+}
+
+int GyverTimer::GetSeconds()
+{
+    return timeClient->getSeconds();
+}
+
+String GyverTimer::Time()
+{
+    return timeClient->getFormattedTime();
+}
+
 
 String GyverTimer::Hours()
 {

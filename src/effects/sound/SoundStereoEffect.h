@@ -6,6 +6,7 @@ class SoundStereoEffect : public Effect
 public:
     SoundStereoEffect();
     virtual void tick() override;
+    Effect* clone() const { return new SoundStereoEffect(*this); }
 
 private:
     void displayLBand(int band);

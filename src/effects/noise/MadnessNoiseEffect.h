@@ -6,5 +6,6 @@ class MadnessNoiseEffect : public NoiseEffect
 public:
     MadnessNoiseEffect();
     void tick() override;
+    Effect* clone() const { return new MadnessNoiseEffect(*this); }
 };
 

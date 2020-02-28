@@ -4,18 +4,20 @@
 #include <ArduinoJson.h>
 #include <PubSubClient.h>
 
-#define mqtt MqttClient::Instance()
+#define socketio WSocketClient::Instance()
 
-class MqttClient
+class WSocketClient
 {
 public:
-    static MqttClient *Instance();
+    static WSocketClient *Instance();
     static void Initialize();
+    static void Connect();
 
     void loop();
     void update();
+    void onConnected(void (*func)(bool));
 
 protected:
-    MqttClient();
+    WSocketClient();
 };
 

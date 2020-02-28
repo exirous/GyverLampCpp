@@ -10,6 +10,7 @@ public:
     void tick() override;
     void initialize(const JsonObject &json) override;
     void writeSettings(JsonObject &json) override;
+    Effect* clone() const { return new FireEffect(*this); }
 
 private:
     void generateLine();

@@ -1,0 +1,12 @@
+{
+    "alarms":
+    [
+        {"IsOn":false,"Time":420},
+        {"IsOn":false,"Time":420},
+        {"IsOn":false,"Time":420},
+        {"IsOn":false,"Time":420},
+        {"IsOn":false,"Time":420},
+        {"IsOn":false,"Time":600},
+        {"IsOn":false,"Time":600}
+    ]
+}

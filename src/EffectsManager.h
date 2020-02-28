@@ -13,6 +13,7 @@ public:
     static void Initialize();
 
     void Process();
+    void ProcessForcedEffect();
 
     void ProcessEffectSettings(const JsonObject &json);
 
@@ -25,6 +26,9 @@ public:
     void UpdateCurrentSettings(const JsonObject &json);
 
     uint8_t Count();
+
+    void ForceEffect(int effectIndex, uint8_t brighness, uint8_t speed, uint16_t scale);
+    void ClearForcedEffect();
 
     Effect *activeEffect();
     uint8_t ActiveEffectIndex();

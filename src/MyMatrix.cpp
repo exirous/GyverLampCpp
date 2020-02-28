@@ -161,6 +161,11 @@ void MyMatrix::drawPixelXY(uint8_t x, uint8_t y, CRGB color)
     leds[myMatrix->getPixelNumberXY(x, y)] = color;
 }
 
+void MyMatrix::drawPix(uint16_t number, CRGB color)
+{
+    leds[number] = color;
+}
+
 void MyMatrix::drawLineXY(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, CRGB color)
 {
     setPassThruColor(color);

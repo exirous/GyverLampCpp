@@ -10,11 +10,12 @@ class AsyncWebSocketClient;
 class Settings
 {
 public:
+
     struct EffectSettings {
         String id = "";
         String name = "";
         uint8_t speed = 1;
-        uint8_t scale = 100;
+        uint16_t scale = 100;
         uint8_t brightness = 80;
     };
 
@@ -39,7 +40,7 @@ public:
         String mdns = "firelamp";
         String apName = "Fire Lamp";
         String ntpServer = "europe.pool.ntp.org";
-        uint32_t ntpOffset = 10800;
+        uint32_t ntpOffset = 7200;
     };
 
     struct MqttSettings {
@@ -61,6 +62,7 @@ public:
     void BuildJsonMqtt(JsonObject &root);
     void WriteConfigTo(AsyncWebSocket *socket, AsyncWebSocketClient *client);
     void WriteEffectsMqtt(JsonArray &array);
+    String GetConfigBuffer();
 
     void ProcessConfig(const String &message);
     void ProcessCommandMqtt(const JsonObject &json);

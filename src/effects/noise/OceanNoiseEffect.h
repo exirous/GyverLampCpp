@@ -5,5 +5,6 @@ class OceanNoiseEffect : public NoiseEffect
 {
 public:
     OceanNoiseEffect();
+    Effect* clone() const { return new OceanNoiseEffect(*this); }
 };
 

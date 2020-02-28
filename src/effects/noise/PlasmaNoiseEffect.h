@@ -5,5 +5,6 @@ class PlasmaNoiseEffect : public NoiseEffect
 {
 public:
     PlasmaNoiseEffect();
+    Effect* clone() const { return new PlasmaNoiseEffect(*this); }
 };
 
